@@ -163,6 +163,8 @@ function overviewBurgs() {
     this.parentNode.dataset.population = this.value;
     this.value = si(this.value);
 
+    resizeBurg(burg);
+
     const population = [];
     body.querySelectorAll(":scope > div").forEach(el => population.push(+getInteger(el.dataset.population)));
     burgsFooterPopulation.innerHTML = si(d3.mean(population));

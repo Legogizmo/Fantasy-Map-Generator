@@ -236,6 +236,7 @@
 
     // remove old data
     burgIcons.selectAll("circle").remove();
+    burgIcons.selectAll("use").remove();
     burgLabels.selectAll("text").remove();
     icons.selectAll("use").remove();
 
@@ -243,17 +244,18 @@
     const capitals = pack.burgs.filter(b => b.capital);
     const capitalIcons = burgIcons.select("#cities");
     const capitalLabels = burgLabels.select("#cities");
-    const capitalSize = capitalIcons.attr("size") || 1;
+    const capitalSize = capitalIcons.attr("size") || 4;
     const capitalAnchors = anchors.selectAll("#cities");
     const caSize = capitalAnchors.attr("size") || 2;
 
-    capitalIcons.selectAll("circle").data(capitals).enter()
-      .append("circle").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
-      .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", capitalSize);
+    capitalIcons.selectAll("use").data(capitals).enter()
+      .append("use").attr("xlink:href", "#icon-burg-round").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
+      .attr("x", d => d.x).attr("y", d => d.y).attr("width", capitalSize).attr("height", capitalSize)
+      .attr("transform", `translate(${capitalSize * -.5},${capitalSize * -.5})`);
 
     capitalLabels.selectAll("text").data(capitals).enter()
       .append("text").attr("id", d => "burgLabel"+d.i).attr("data-id", d => d.i)
-      .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${capitalSize * -1.5}px`).text(d => d.name);
+      .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${capitalSize * -.5}px`).text(d => d.name);
 
     capitalAnchors.selectAll("use").data(capitals.filter(c => c.port)).enter()
       .append("use").attr("xlink:href", "#icon-anchor").attr("data-id", d => d.i)
@@ -264,17 +266,18 @@
     const towns = pack.burgs.filter(b => b.i && !b.capital);
     const townIcons = burgIcons.select("#towns");
     const townLabels = burgLabels.select("#towns");
-    const townSize = townIcons.attr("size") || 0.5;
+    const townSize = townIcons.attr("size") || 2;
     const townsAnchors = anchors.selectAll("#towns");
     const taSize = townsAnchors.attr("size") || 1;
 
-    townIcons.selectAll("circle").data(towns).enter()
-      .append("circle").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
-      .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", townSize);
+    townIcons.selectAll("use").data(towns).enter()
+    .append("use").attr("xlink:href", "#icon-burg-round").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
+    .attr("x", d => d.x).attr("y", d => d.y).attr("width", townSize).attr("height", townSize)
+    .attr("transform", `translate(${townSize * -.5},${townSize * -.5})`);
 
     townLabels.selectAll("text").data(towns).enter()
       .append("text").attr("id", d => "burgLabel"+d.i).attr("data-id", d => d.i)
-      .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${townSize * -1.5}px`).text(d => d.name);
+      .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${townSize * -.5}px`).text(d => d.name);
 
      townsAnchors.selectAll("use").data(towns.filter(c => c.port)).enter()
       .append("use").attr("xlink:href", "#icon-anchor").attr("data-id", d => d.i)

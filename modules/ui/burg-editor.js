@@ -287,6 +287,7 @@ function editBurg(id) {
   function changePopulation() {
     const id = +elSelected.attr("data-id");
     pack.burgs[id].population = rn(burgPopulation.value / populationRate.value / urbanization.value, 4);
+    resizeBurg(id);
   }
 
   function toggleFeature() {

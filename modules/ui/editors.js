@@ -134,11 +134,24 @@ function addBurg(point) {
   pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population, coa, type});
   cells.burg[cell] = i;
 
-  const townSize = burgIcons.select("#towns").attr("size") || 0.5;
-  burgIcons.select("#towns").append("circle").attr("id", "burg"+i).attr("data-id", i)
-    .attr("cx", x).attr("cy", y).attr("r", townSize);
+  const shape = burgIcons.select("#towns").attr("icon") || "#icon-burg-round";
+  const sizeByPop = burgIcons.select("#towns").attr("sizeByPop") || 0;
+  const townSize = burgIcons.select("#towns").attr("size") || 1;
+  if (sizeByPop == 1){
+    const smallPop = rn(icon.parentNode.getAttribute("smallPop")/ populationRate.value / urbanization.value, 4);
+    const bigPop = rn(icon.parentNode.getAttribute("bigPop")/ populationRate.value / urbanization.value, 4);
+    if( population < smallPop){
+      townSize = burgIcons.select("#towns").attr("smallSize");
+    }else if ( population > bigPop){
+      townSize = burgIcons.select("#towns").attr("bigSize");
+    }
+  }
+  const shift= townSize * -.5;
+  burgIcons.select("#towns").append("use").attr("id", "burg"+i).attr("data-id", i).attr("href",shape)
+    .attr("x", x).attr("y", y).attr("width", townSize).attr("height", townSize)
+    .attr("transform", `translate(${shift},${shift})`);
   burgLabels.select("#towns").append("text").attr("id", "burgLabel"+i).attr("data-id", i)
-    .attr("x", x).attr("y", y).attr("dy", `${townSize * -1.5}px`).text(name);
+    .attr("x", x).attr("y", y).attr("dy", `${shift}px`).text(name);
 
   BurgsAndStates.defineBurgFeatures(pack.burgs[i]);
   return i;
@@ -153,9 +166,10 @@ function moveBurgToGroup(id, g) {
   document.querySelector("#burgLabels > #"+g).appendChild(label);
   document.querySelector("#burgIcons > #"+g).appendChild(icon);
 
-  const iconSize = icon.parentNode.getAttribute("size");
-  icon.setAttribute("r", iconSize);
-  label.setAttribute("dy", `${iconSize * -1.5}px`);
+  const shape = icon.parentNode.getAttribute("icon") || "#icon-burg-round";
+  icon.setAttribute("href",shape);
+
+  resizeBurg(id);
 
   if (anchor) {
     document.querySelector("#anchors > #"+g).appendChild(anchor);
@@ -165,6 +179,47 @@ function moveBurgToGroup(id, g) {
     anchor.setAttribute("x", rn(pack.burgs[id].x - anchorSize * 0.47, 2));
     anchor.setAttribute("y", rn(pack.burgs[id].y - anchorSize * 0.47, 2));
   }
+}
+
+function resizeBurg(id) {
+  const label = document.querySelector("#burgLabels [data-id='" + id + "']");
+  const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
+  const anchor = document.querySelector("#anchors [data-id='" + id + "']");
+  if (!label || !icon) {ERROR && console.error("Cannot find label or icon elements"); return;}
+
+  const midSize = icon.parentNode.getAttribute("size");
+  const midShift = midSize*-.5;
+  const sizeByPop = icon.parentNode.getAttribute("sizeByPop");
+  if (sizeByPop == 1){
+    const smallPop = rn(icon.parentNode.getAttribute("smallPop")/ populationRate.value / urbanization.value, 4);
+    const bigPop = rn(icon.parentNode.getAttribute("bigPop")/ populationRate.value / urbanization.value, 4);
+    const smallSize = icon.parentNode.getAttribute("smallSize");
+    const bigSize = icon.parentNode.getAttribute("bigSize");
+    const smallShift= smallSize*-.5, bigShift= bigSize*-.5;
+    const burg = pack.burgs[id];
+    if(burg.population < smallPop){
+      icon.setAttribute("transform", `translate(${smallShift},${smallShift})`);
+      icon.setAttribute("width", smallSize);
+      icon.setAttribute("height", smallSize);
+      label.setAttribute("dy", `${smallShift}px`);
+    } else if(burg.population > bigPop) {
+      icon.setAttribute("transform", `translate(${bigShift},${bigShift})`);
+      icon.setAttribute("width", bigSize);
+      icon.setAttribute("height", bigSize);
+      label.setAttribute("dy", `${bigShift}px`);
+    } else {
+      icon.setAttribute("transform", `translate(${midShift},${midShift})`);
+      icon.setAttribute("width", midSize);
+      icon.setAttribute("height", midSize);
+      label.setAttribute("dy", `${midShift}px`);
+    }
+  } else {
+    icon.setAttribute("transform", `translate(${midShift},${midShift})`);
+    icon.setAttribute("width", midSize);
+    icon.setAttribute("height", midSize);
+    label.setAttribute("dy", `${midShift}px`);
+  }
+
 }
 
 function removeBurg(id) {

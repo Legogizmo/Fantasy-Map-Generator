@@ -174,13 +174,23 @@ function selectStyleElement() {
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeDash.style.display = "block";
+    styleBurgIcon.style.display = "block";
     styleRadius.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || .24;
     styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
     styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
-    styleRadiusInput.value = el.attr("size") || 1;
+    styleBurgIconInput.value = el.attr("icon") || "#icon-burg-round";
+    styleRadiusInput.value = el.attr("size") || 2;
+    if (el.attr("sizeByPop")){
+      styleBurgSizePop.style.display = (el.attr("sizeByPop") == 1) ? "block" : "none";
+      burgSizebyPop.innerHTML = (el.attr("sizeByPop") == 1) ? "Disable burg size by population" : "Enable burg size by population";
+      styleSmallPopInput.value = el.attr("smallPop") || 2000;
+      styleSmallSizeInput.value = el.attr("smallSize") || 1;
+      styleBigPopInput.value = el.attr("bigPop") || 40000;
+      styleBigSizeInput.value = el.attr("bigSize") || 5;
+    }
   }
 
   if (sel == "anchors") {
@@ -557,6 +567,117 @@ function changeFontSize(size) {
   if (legend) redrawLegend();
 }
 
+styleBurgIconInput.addEventListener("change", function() {
+  changeBurgIcon(this.value);
+});
+function changeBurgIcon(icon) {
+  const el = getEl();
+  const g = el.attr("id");
+  el.attr("icon",icon);
+  el.selectAll("use").each(function() {
+    this.setAttribute("href", icon);
+  });
+}
+
+burgSizebyPop.addEventListener("click", function() {
+  const el = getEl();
+
+  if(el.attr("sizeByPop")=="1"){ //disable
+    el.attr("sizeByPop", 0);
+    styleBurgSizePop.style.display ="none";
+    burgSizebyPop.innerHTML="Enable burg size by population";
+
+  } else { //enable
+    el.attr("sizeByPop", 1);
+    styleBurgSizePop.style.display ="block";
+    burgSizebyPop.innerHTML="Disable burg size by population";
+
+  }
+  changeBurgSizebyPop();
+});
+
+styleSmallPopInput.addEventListener("change", function() {
+  changeBurgSizebyPop();
+});
+
+styleSmallSizeInput.addEventListener("change", function() {
+  changeBurgSizebyPop();
+});
+
+styleBigPopInput.addEventListener("change", function() {
+  changeBurgSizebyPop();
+});
+
+styleBigSizeInput.addEventListener("change", function() {
+  changeBurgSizebyPop();
+});
+
+function changeBurgSizebyPop(){
+  const el = getEl();
+  const g = el.attr("id");
+  el.attr("size", styleRadiusInput.value);
+  el.attr("smallPop",styleSmallPopInput.value);
+  el.attr("smallSize",styleSmallSizeInput.value);
+  el.attr("bigPop",styleBigPopInput.value);
+  el.attr("bigSize",styleBigSizeInput.value);
+  resizeBurgsByPop(g);
+}
+
+function resizeBurgsByPop(g) {
+  const burgGroup = document.querySelector("#burgIcons > #"+g);
+  //const burgGroup = burgIcons.select("g#"+g);
+  const sbp = burgGroup.getAttribute("sizeByPop");
+  const midSize = burgGroup.getAttribute("size");
+  const smallSize = burgGroup.getAttribute("smallSize");
+  const bigSize = burgGroup.getAttribute("bigSize");
+  const smallPop = rn(burgGroup.getAttribute("smallPop")/ populationRate.value / urbanization.value, 4);
+  const bigPop = rn(burgGroup.getAttribute("bigPop")/ populationRate.value / urbanization.value, 4);
+  const midShift= midSize*-.5, smallShift= smallSize*-.5, bigShift= bigSize*-.5;
+  if(bigPop <= smallPop){
+    tip("Population values overlap, the first population value must be less than the second!");
+    return;
+  }
+  if(sbp ==1){ //Change size based on pop
+    burgIcons.select("g#"+g).selectAll("use").each(function() {
+      const id = this.getAttribute("data-id");
+      const burg = pack.burgs[id];
+      if(burg.population < smallPop){
+        this.setAttribute("transform", `translate(${smallShift},${smallShift})`);
+        this.setAttribute("width", smallSize);
+        this.setAttribute("height", smallSize);
+      } else if(burg.population > bigPop) {
+        this.setAttribute("transform", `translate(${bigShift},${bigShift})`);
+        this.setAttribute("width", bigSize);
+        this.setAttribute("height", bigSize);
+      } else {
+        this.setAttribute("transform", `translate(${midShift},${midShift})`);
+        this.setAttribute("width", midSize);
+        this.setAttribute("height", midSize);
+      }
+    });
+    burgLabels.select("g#"+g).selectAll("text").each(function() {
+      const id = this.getAttribute("data-id");
+      const burg = pack.burgs[id];
+      if(burg.population < smallPop){
+        this.setAttribute("dy", `${smallShift}px`);
+      } else if(burg.population > bigPop) {
+        this.setAttribute("dy", `${bigShift}px`);
+      } else {
+        this.setAttribute("dy", `${midShift}px`);
+      }
+    });
+  } else { //Set size to default for group
+    //changeRadius(midSize,g);
+    burgIcons.select("g#"+g).selectAll("use").each(function() {
+      this.setAttribute("transform", `translate(${midShift},${midShift})`);
+      this.setAttribute("width", midSize);
+      this.setAttribute("height", midSize);
+    });
+    burgLabels.select("g#"+g).selectAll("text").each(function() {this.setAttribute("dy", `${midShift}px`)});
+    changeIconSize(midSize*.5,g);
+  }
+}
+
 styleRadiusInput.addEventListener("change", function() {
   changeRadius(+this.value);
 });
@@ -572,13 +693,21 @@ styleRadiusMinus.addEventListener("click", function() {
 });
 
 function changeRadius(size, group) {
+  /*
   const el = group ? burgIcons.select("#"+group) : getEl();
   const g = el.attr("id");
+  const shift = size* -.5;
   el.attr("size", size)
-  el.selectAll("circle").each(function() {this.setAttribute("r", size)});
+  el.selectAll("use").each(function() {
+    this.setAttribute("transform", `translate(${shift},${shift})`);
+    this.setAttribute("width", size);
+    this.setAttribute("height", size);
+  });
+  */
   styleRadiusInput.value = size;
-  burgLabels.select("g#"+g).selectAll("text").each(function() {this.setAttribute("dy", `${size * -1.5}px`)});
-  changeIconSize(size * 2, g); // change also anchor icons
+  changeBurgSizebyPop();
+  //burgLabels.select("g#"+g).selectAll("text").each(function() {this.setAttribute("dy", `${size * -.5}px`)});
+  //changeIconSize(size * .5, g); // change also anchor icons
 }
 
 styleIconSizeInput.addEventListener("change", function() {
